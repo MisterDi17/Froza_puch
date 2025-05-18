@@ -3,39 +3,39 @@
 public class NPSTargetSetter : MonoBehaviour
 {
     [SerializeField] private ControlNPS controller;
-    [SerializeField] private Transform targetPrefab; // опционально — визуальная метка точки
+    [SerializeField] private Sprite targetSprite;
 
-    private Transform currentTargetInstance;
+    private SpriteRenderer _targetVisual;
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(1)) // ПКМ
+        if (Input.GetMouseButtonDown(1))
         {
-            Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            SetTargetPosition(mousePos);
+            SetTarget(Camera.main.ScreenToWorldPoint(Input.mousePosition));
         }
     }
 
-    public void SetTargetPosition(Vector2 position)
+    public void SetTarget(Vector2 position)
     {
-        if (controller == null) return;
+        UpdateTargetVisual(position);
+        controller.SetTargetPosition(position);
+    }
 
-        // Создаем или перемещаем метку
-        if (targetPrefab != null)
+    private void UpdateTargetVisual(Vector2 position)
+    {
+        if (targetSprite == null) return;
+
+        if (_targetVisual == null)
         {
-            if (currentTargetInstance == null)
-                currentTargetInstance = Instantiate(targetPrefab, position, Quaternion.identity);
-            else
-                currentTargetInstance.position = position;
-
-            controller.SetTarget(currentTargetInstance);
+            GameObject visual = new GameObject("TargetVisual");
+            visual.transform.position = position;
+            _targetVisual = visual.AddComponent<SpriteRenderer>();
+            _targetVisual.sprite = targetSprite;
+            _targetVisual.color = Color.red;
         }
         else
         {
-            // Если метка не задана — создаем временный объект
-            GameObject temp = new GameObject("NPS_Target");
-            temp.transform.position = position;
-            controller.SetTarget(temp.transform);
+            _targetVisual.transform.position = position;
         }
     }
 }
