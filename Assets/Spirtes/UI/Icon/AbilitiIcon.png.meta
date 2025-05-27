@@ -1,0 +1,218 @@
+fileFormatVersion: 2
+guid: 6aca5302eee74fc4393d7db4fc400180
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8823780129945992543
+    second: AbilitiIcon_0
+  - first:
+      213: -6828447118362789502
+    second: AbilitiIcon_1
+  - first:
+      213: -3683686040457532283
+    second: AbilitiIcon_2
+  - first:
+      213: -2048454352894935618
+    second: AbilitiIcon_3
+  - first:
+      213: -3690940915276492120
+    second: AbilitiIcon_4
+  - first:
+      213: -4927659892458179325
+    second: AbilitiIcon_5
+  - first:
+      213: 4346881246371799907
+    second: AbilitiIcon_6
+  - first:
+      213: 2160542019889787907
+    second: AbilitiIcon_7
+  - first:
+      213: -796783271823764585
+    second: AbilitiIcon_8
+  - first:
+      213: -4575657424011457200
+    second: AbilitiIcon_9
+  - first:
+      213: 1676668100655730676
+    second: AbilitiIcon_10
+  - first:
+      213: -6926923508097654511
+    second: AbilitiIcon_11
+  - first:
+      213: -3155665183301710786
+    second: AbilitiIcon_12
+  - first:
+      213: -6973690204323206678
+    second: AbilitiIcon_13
+  - first:
+      213: 4036873551271962517
+    second: AbilitiIcon_14
+  - first:
+      213: -199433277140014045
+    second: AbilitiIcon_15
+  - first:
+      213: 6551415295957197315
+    second: AbilitiIcon_16
+  - first:
+      213: -1408709302349338467
+    second: AbilitiIcon_17
+  - first:
+      213: -1406704374452967690
+    second: AbilitiIcon_18
+  - first:
+      213: 3240250118032805296
+    second: AbilitiIcon_19
+  - first:
+      213: 71444917303679937
+    second: AbilitiIcon_20
+  - first:
+      213: -8831359217311168154
+    second: AbilitiIcon_21
+  - first:
+      213: -4576185989127836671
+    second: AbilitiIcon_22
+  - first:
+      213: -492268110156813861
+    second: AbilitiIcon_23
+  - first:
+      213: -8986998677029633012
+    second: AbilitiIcon_24
+  - first:
+      213: 5506710980841685918
+    second: AbilitiIcon_25
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: AbilitiIcon_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 1200
+        height: 1179
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ebd38158e9d6293e0800000000000000
+      internalID: -2048454352894935618
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 514b7a4bd7e3e414398931b5748c76df
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      AbilitiIcon_3: -2048454352894935618
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

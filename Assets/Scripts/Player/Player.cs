@@ -22,6 +22,11 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
+
+        // Блокировка управления, если фокус на чате
+        if (ChatManager.IsChatFocused)
+            return;
+
         var input = GameInput.Instance;
         if (input == null) return;
 
@@ -47,7 +52,10 @@ public class Player : MonoBehaviour
             settings.Movement.ProcessMovement(moveDir, isRunning);
         }
 
-        settings.Animator.SetBool("isMoving", settings.Movement.IsMoving);
-        settings.Animator.SetBool("isRunning", settings.Movement.CurrentSpeedPercent > 0.5f);
+        if (settings.Animator != null && settings.Animator.runtimeAnimatorController != null)
+        {
+            settings.Animator.SetBool("isMoving", settings.Movement.IsMoving);
+            settings.Animator.SetBool("isRunning", settings.Movement.CurrentSpeedPercent > 0.5f);
+        }
     }
 }
