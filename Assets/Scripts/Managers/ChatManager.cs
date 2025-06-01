@@ -3,14 +3,16 @@ using TMPro;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
-using Unity.VisualScripting;
 using System.Collections.Generic;
 
 public class ChatManager : MonoBehaviour
 {
+    [SerializeField] private GameObject nofilaChatPrefab;
+    [SerializeField] private GameObject dialokPrefab;
+    [SerializeField] private Transform dialogParent;
 
-    private Queue<string> dialogQueue = new Queue<string>();
-    private bool isDialogPlaying = false;
+    private Queue<(string, ActorCollector.FullActorData)> globalQueue = new Queue<(string, ActorCollector.FullActorData)>();
+    private bool isGlobalPlaying = false;
 
     [Header("UI")]
     public TMP_InputField inputField;
@@ -24,202 +26,210 @@ public class ChatManager : MonoBehaviour
 
     [Header("Defaults")]
     public Sprite defaultAvatar;
+    public Sprite defaultProfileArt;
 
-    [Header("Dialog")]
-    public GameObject dialogPrefab; // Префаб с FollowPlayerUI + TypewriterEffect
-    public Transform playerTransform; // Игрок, над которым будет диалог
+    public ActorCollector actorCollector;
+
     public static bool IsChatFocused { get; private set; }
-
-
-
-    // Список актёров с аватарками — можешь расширить
-    [System.Serializable]
-    public class ActorData
-    {
-        public string actorName;
-        public Sprite avatar;
-    }
-
-    public ActorData[] actors;
 
     void Start()
     {
-        Debug.Log("Создаётся диалоговое окно...");
-
-        if (dialogPrefab == null)
-        {
-            Debug.LogError("dialogPrefab is NULL");
-        }
-        else
-        {
-            Debug.Log("dialogPrefab: " + dialogPrefab.name);
-        }
-
-        if (playerTransform == null)
-        {
-            Debug.LogError("playerTransform is NULL");
-        }
-        else
-        {
-            Debug.Log("playerTransform: " + playerTransform.name);
-        }
-
         inputField.onEndEdit.AddListener((text) =>
         {
             if (Input.GetKeyDown(KeyCode.Return))
-            {
                 SubmitMessage(text);
-            }
         });
 
-        AddSystemMessage("Добро пожаловать в чат!");
-    }
+        var actors = actorCollector.GetAllActors();
+        Debug.Log($"Всего актёров: {actors.Count}");
+        foreach (var a in actors)
+            Debug.Log($"Актёр: {a.name}");
 
-    private void Update()
+        AddSystemMessage("Добро пожаловать в чат!");
+        PopulateActorDropdown();
+    }
+    void Update()
     {
         IsChatFocused = inputField != null && inputField.isFocused;
 
-        // Открытие поля ввода по Enter
         if (Input.GetKeyDown(KeyCode.Return) && !inputField.isFocused)
         {
             inputField.ActivateInputField();
         }
 
-        // Закрытие по Escape
         if (Input.GetKeyDown(KeyCode.Escape) && inputField.isFocused)
         {
             inputField.DeactivateInputField();
             EventSystem.current.SetSelectedGameObject(null);
         }
     }
+    private void PopulateActorDropdown()
+    {
+        selectActorBX.ClearOptions();
+        var actorNames = new List<string>();
 
+        foreach (var actor in actorCollector.GetAllActors())
+        {
+            if (!string.IsNullOrEmpty(actor.name))
+                actorNames.Add(actor.name);
+        }
+
+        if (actorNames.Count == 0)
+            actorNames.Add("Unknown");
+
+        selectActorBX.AddOptions(actorNames);
+    }
     public void SubmitMessage(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
 
         string senderName = selectActorBX.options[selectActorBX.value].text;
-        Sprite senderAvatar = GetActorAvatar(senderName);
+        var actorData = actorCollector.GetActorData(senderName);
 
-        AddChatMessage(senderName, senderAvatar, text);
-
-        // Вставляем этот вызов
-        if (senderName == "Plaeyr") // можно сделать имя переменной
+        if (actorData == null)
         {
-            ShowDialogOverPlayer(text);
+            Debug.LogWarning($"Актёр с именем {senderName} не найден!");
+            return;
+        }
+
+        AddChatMessage(senderName, actorData.avatar, text);
+
+        if (prawBX.options[prawBX.value].text == "Локально")
+        {
+            var targetActor = actorCollector.GetActor(senderName);
+            if (targetActor != null)
+                ShowDialogOverActor(targetActor.transform, text, actorData.voice);
+        }
+        else if (prawBX.options[prawBX.value].text == "Глобально")
+        {
+            ShowGlobalDialog(text, actorData);
         }
 
         inputField.text = "";
         inputField.ActivateInputField();
     }
-
-
-    private void ShowDialogOverPlayer(string message)
+    private void ShowDialogOverActor(Transform target, string message, AudioClip voice)
     {
-        dialogQueue.Enqueue(message);
-
-        if (!isDialogPlaying)
-            StartCoroutine(ProcessDialogQueue());
-    }
-
-    private IEnumerator WaitAndDestroyDialog(GameObject dialog, TypewriterEffect typer, string message)
-    {
-        bool typingDone = false;
-
-        typer.StartTyping(message, () =>
+        if (dialogParent == null)
         {
-            typingDone = true;
-        });
-
-        // Ждём пока завершится печать
-        yield return new WaitUntil(() => typingDone);
-
-        // Ждём ещё 5 секунд
-        yield return new WaitForSeconds(5f);
-
-        Destroy(dialog);
-    }
-
-    private IEnumerator ProcessDialogQueue()
-    {
-        isDialogPlaying = true;
-
-        while (dialogQueue.Count > 0)
-        {
-            string message = dialogQueue.Dequeue();
-
-            // Создаём диалог
-            GameObject dialogGO = Instantiate(dialogPrefab, UnityEngine.Object.FindFirstObjectByType<Canvas>().transform);
-            dialogGO.transform.localPosition = Vector3.zero;
-
-            FollowPlayerUI follow = dialogGO.GetComponent<FollowPlayerUI>();
-            if (follow != null)
-            {
-                follow.player = playerTransform;
-                follow.offset = new Vector3(0, 0.75f, 0);
-            }
-
-            TypewriterEffect typer = dialogGO.GetComponentInChildren<TypewriterEffect>(true);
-            if (typer != null)
-            {
-                typer.StartTyping(message);
-            }
-
-            // Ждём, пока текст полностью напишется
-            yield return new WaitUntil(() => typer != null && typer.IsFinished);
-
-            yield return new WaitForSeconds(3f);
-
-            Destroy(dialogGO);
-
-            // Подождать 3 секунды перед следующим сообщением
-            yield return new WaitForSeconds(0.1f);
+            Debug.LogError("Dialog Parent не назначен!");
+            return;
         }
 
-        isDialogPlaying = false;
+        GameObject dialog = Instantiate(dialokPrefab, dialogParent);
+        dialog.transform.localPosition = Vector3.zero; // по желанию
+
+        var followTarget = dialog.GetComponent<FollowTarget>();
+        if (followTarget != null)
+        {
+            followTarget.target = target;
+        }
+        else
+        {
+            Debug.LogError("dialokPrefab не содержит компонент FollowTarget!");
+        }
+
+        TMP_Text textComponent = dialog.transform.Find("Fon/DIalocText")?.GetComponent<TMP_Text>();
+        AudioSource audioSource = dialog.transform.Find("Fon/DIalocText/Audio")?.GetComponent<AudioSource>();
+
+        if (textComponent != null)
+        {
+            bool isDone = false;
+            var typer = textComponent.GetComponent<TypewriterEffect>();
+
+            if (typer != null)
+                typer.StartTyping(message, () => isDone = true, audioSource, voice);
+            else
+            {
+                textComponent.text = message;
+                isDone = true;
+            }
+
+            StartCoroutine(DestroyAfterFinish(dialog, () => isDone));
+        }
     }
+    private IEnumerator DestroyAfterFinish(GameObject go, System.Func<bool> doneCondition)
+    {
+        yield return new WaitUntil(doneCondition);
+        yield return new WaitForSeconds(2f);
+        Destroy(go);
+    }
+    private void ShowGlobalDialog(string message, ActorCollector.FullActorData actor)
+    {
+        globalQueue.Enqueue((message, actor));
+        if (!isGlobalPlaying)
+            StartCoroutine(ProcessGlobalQueue());
+    }
+    private IEnumerator ProcessGlobalQueue()
+    {
+        isGlobalPlaying = true;
 
+        while (globalQueue.Count > 0)
+        {
+            var (message, actor) = globalQueue.Dequeue();
 
+            if (dialogParent == null)
+            {
+                Debug.LogError("Dialog Parent не назначен!");
+                yield break;
+            }
 
+            GameObject go = Instantiate(nofilaChatPrefab, dialogParent);
+            go.transform.localPosition = Vector3.zero; // опционально, если нужен сброс позиции
+            var nameText = go.transform.Find("Panel/NameProf/NameActer")?.GetComponent<TMP_Text>();
+            var image = go.transform.Find("Panel/NameProf/Image")?.GetComponent<Image>();
+            var textProf = go.transform.Find("Panel/TextProf")?.GetComponent<TMP_Text>();
+            var audioSource = go.transform.Find("Panel/TextProf/Audio")?.GetComponent<AudioSource>();
+            var art = go.transform.Find("Art")?.GetComponent<Image>();
 
+            if (nameText) nameText.text = actor.name;
+            if (image) image.sprite = actor.avatar;
+            if (art) art.sprite = actor.poster;
+
+            if (textProf != null)
+            {
+                bool isDone = false;
+                var typer = textProf.GetComponent<TypewriterEffect>();
+                if (typer != null)
+                    typer.StartTyping(message, () => isDone = true, audioSource, actor.voice);
+                else
+                {
+                    textProf.text = message;
+                    isDone = true;
+                }
+
+                yield return new WaitUntil(() => isDone);
+            }
+
+            yield return new WaitForSeconds(2f);
+            Destroy(go);
+        }
+
+        isGlobalPlaying = false;
+    }
     public void AddSystemMessage(string text)
     {
         AddChatMessage("Система", defaultAvatar, text, isSystem: true);
     }
-
     public void AddChatMessage(string senderName, Sprite avatar, string message, bool isSystem = false)
     {
         GameObject go = Instantiate(chatMessagePrefab, messageParent);
-
-        // Поиск компонентов внутри префаба
         var avatarImg = go.transform.Find("NameMesseg/Afatarca").GetComponent<Image>();
-        var nameTxt = go.transform.Find("NameMesseg/NameMeseg").GetComponent<TMP_Text>();
+        var nameTxt = go.transform.Find("NameMesseg/NameMeseg/Name").GetComponent<TMP_Text>();
         var msgTxt = go.transform.Find("Messeg").GetComponent<TMP_Text>();
 
-        if (avatarImg) avatarImg.sprite = avatar != null ? avatar : defaultAvatar;
+        if (avatarImg) avatarImg.sprite = avatar ?? defaultAvatar;
         if (nameTxt) nameTxt.text = senderName;
         if (msgTxt) msgTxt.text = isSystem ? $"<i>{message}</i>" : message;
 
-        // Запускаем отложенное обновление скролла
         StartCoroutine(DelayedScrollToBottom());
     }
-
     private IEnumerator DelayedScrollToBottom()
     {
-        yield return null; // кадр 1
-        yield return null; // кадр 2
+        yield return null;
+        yield return null;
         LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)messageParent);
         Canvas.ForceUpdateCanvases();
         scrollRect.verticalNormalizedPosition = 0f;
-    }
-
-
-    private Sprite GetActorAvatar(string actorName)
-    {
-        foreach (var actor in actors)
-        {
-            if (actor.actorName == actorName)
-                return actor.avatar;
-        }
-        return defaultAvatar;
     }
 }

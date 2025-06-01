@@ -1,91 +1,66 @@
 ﻿using System.Collections;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 public class TypewriterEffect : MonoBehaviour
 {
-    [Header("UI")]
-    [SerializeField] private TextMeshProUGUI textComponent;
+    [SerializeField] private float timeBetweenLetters = 0.05f;
+    [SerializeField] private float audioInterval = 0.1f;
 
-    [Header("Текст")]
-    [TextArea(3, 10)]
-    [SerializeField] private string textToType = "";
+    [SerializeField] private AudioClip typingSound;
+    [SerializeField] private AudioSource audioSource;
 
-    [Header("Настройки")]
-    [SerializeField] private float delay = 0.05f;
-    [SerializeField] private bool startOnAwake = true;
-
-    [Header("Звук")]
-    [SerializeField] private AudioSource typeSound;
-
-    private Coroutine typingCoroutine;
-    private bool skipRequested = false;
+    private bool isTyping = false;
     public bool IsFinished { get; private set; }
 
-    private void Awake()
+    public void Initialize(AudioSource source, AudioClip clip)
     {
-        if (string.IsNullOrEmpty(textToType) && textComponent != null)
-        {
-            textToType = textComponent.text;
-        }
-
-        if (startOnAwake && textComponent != null)
-        {
-            StartTyping(); // Теперь есть такая перегрузка
-        }
+        audioSource = source;
+        typingSound = clip;
     }
 
-    // 🔧 Перегрузка без аргументов
-    public void StartTyping()
+    public void StartTyping(string message, System.Action onComplete = null)
     {
-        StartTyping(textToType, null);
-    }
-
-    // 🔧 Перегрузка с текстом без колбэка
-    public void StartTyping(string text)
-    {
-        StartTyping(text, null);
-    }
-
-    // ✅ Основной метод с колбэком
-    public void StartTyping(string text, System.Action onComplete = null)
-    {
-        if (textComponent == null)
-            textComponent = GetComponent<TMP_Text>() as TextMeshProUGUI;
-
         StopAllCoroutines();
-        StartCoroutine(TypeRoutine(text, onComplete));
+        StartCoroutine(TypeText(message, onComplete, audioSource, typingSound));
     }
 
-
-    private IEnumerator TypeRoutine(string text, System.Action onComplete)
+    public void StartTyping(string message, System.Action onComplete, AudioSource source, AudioClip clip)
     {
-        IsFinished = false;
-        if (textComponent == null)
-            textComponent = GetComponent<TMP_Text>() as TextMeshProUGUI;
+        Initialize(source, clip);
+        StartTyping(message, onComplete);
+    }
 
+    private IEnumerator TypeText(string message, System.Action onComplete, AudioSource source, AudioClip clip)
+    {
+        isTyping = true;
+        IsFinished = false;
+
+        TMP_Text textComponent = GetComponent<TMP_Text>();
         textComponent.text = "";
 
-        foreach (char c in text)
-        {
-            textComponent.text += c;
+        float lastSoundTime = 0f;
 
-            // 🔊 Проигрываем звук для каждой буквы
-            if (typeSound != null)
+        for (int i = 0; i < message.Length; i++)
+        {
+            textComponent.text += message[i];
+
+            // 🎵 Проигрываем звук только если это НЕ пробел
+            if (clip != null && source != null && message[i] != ' ' && message[i] != '.')
             {
-                typeSound.Play();
+                if (Time.time - lastSoundTime >= audioInterval)
+                {
+                    source.PlayOneShot(clip);
+                    lastSoundTime = Time.time;
+                }
             }
 
-            yield return new WaitForSeconds(delay);
+            yield return new WaitForSeconds(timeBetweenLetters);
         }
 
+
         IsFinished = true;
+        isTyping = false;
         onComplete?.Invoke();
-    }
-
-
-    public void Skip()
-    {
-        skipRequested = true;
     }
 }
