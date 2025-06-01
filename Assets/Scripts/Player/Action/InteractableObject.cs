@@ -5,33 +5,29 @@ using UnityEngine.EventSystems;
 
 namespace Assets.Scripts.Player.Action
 {
-    [RequireComponent(typeof(Collider))]
+    [RequireComponent(typeof(Collider2D))] // Заменено на 2D
     public class InteractableObject : MonoBehaviour
     {
         [Header("Настройки взаимодействия")]
-        [SerializeField] private float holdTimeThreshold = 0.5f; // держим Е, чтобы открыть все действия
+        [SerializeField] private float holdTimeThreshold = 0.5f;
         [SerializeField] private KeyCode interactKey = KeyCode.E;
 
         [Header("UI Prefabs")]
-        [SerializeField] private GameObject iconE_Prefab;       // Простая иконка "Е" над объектом
-        [SerializeField] private GameObject actionsPanel_Prefab; // UI панель со списком действий
+        [SerializeField] private GameObject iconE_Prefab;
+        [SerializeField] private GameObject actionsPanel_Prefab;
 
-        // Список действий, которые этот объект поддерживает (можно заполнить в инспекторе или кодом)
         public List<MonoBehaviour> interactionActions = new List<MonoBehaviour>();
-        // Мы считаем, что каждый добавленный MonoBehaviour реализует IInteractionAction
 
-        // Внутренние поля
         private GameObject iconEInstance;
         private GameObject actionsPanelInstance;
         private bool playerInRange = false;
         private float holdTimer = 0f;
         private bool isHolding = false;
-        private GameObject player; // ссылка на игрока, чтобы передавать в Execute
+        private GameObject player;
         [SerializeField] private UIActionSliderManager sliderManager;
 
         private void Awake()
         {
-            // Опционально: проверить, что все элементы списка interactionActions реализуют IInteractionAction
             for (int i = 0; i < interactionActions.Count; i++)
             {
                 if (!(interactionActions[i] is IInteractionAction))
@@ -39,7 +35,7 @@ namespace Assets.Scripts.Player.Action
             }
         }
 
-        private void OnTriggerEnter(Collider other)
+        private void OnTriggerEnter2D(Collider2D other) // заменено на 2D
         {
             if (other.CompareTag("Player"))
             {
@@ -49,7 +45,7 @@ namespace Assets.Scripts.Player.Action
             }
         }
 
-        private void OnTriggerExit(Collider other)
+        private void OnTriggerExit2D(Collider2D other) // заменено на 2D
         {
             if (other.CompareTag("Player"))
             {
@@ -65,7 +61,6 @@ namespace Assets.Scripts.Player.Action
         {
             if (!playerInRange) return;
 
-            // Если находимся в зоне иконки, следим за нажатием E
             if (Input.GetKeyDown(interactKey))
             {
                 isHolding = true;
@@ -75,10 +70,8 @@ namespace Assets.Scripts.Player.Action
             if (isHolding && Input.GetKey(interactKey))
             {
                 holdTimer += Time.deltaTime;
-
                 if (holdTimer >= holdTimeThreshold)
                 {
-                    // держим дольше threshold — открываем список всех действий, если он ещё не открыт
                     if (actionsPanelInstance == null)
                         OpenActionsPanel();
                 }
@@ -88,10 +81,8 @@ namespace Assets.Scripts.Player.Action
             {
                 if (!IsActionsPanelOpen())
                 {
-                    // Это короткий тап
                     PerformPrimaryAction();
                 }
-                // Если панель открыта, тап E не закрывает её — мы её закрываем только программно
                 ResetHold();
             }
         }
@@ -110,7 +101,6 @@ namespace Assets.Scripts.Player.Action
                 {
                     iconEInstance = Instantiate(iconE_Prefab, transform);
                     iconEInstance.transform.localPosition = Vector3.up * 2f;
-                    // допустим, мы хотим иконку над головой объекта. Можно настроить положение.
                 }
             }
             else
@@ -130,10 +120,7 @@ namespace Assets.Scripts.Player.Action
             if (actionsPanel_Prefab == null || player == null) return;
 
             actionsPanelInstance = Instantiate(actionsPanel_Prefab, GameObject.Find("Canvas").transform);
-            // Предположим, у нас есть Canvas в сцене c именем "Canvas"
-            // Внутри prefab-а лежит ScrollView или VerticalLayoutGroup для кнопок
 
-            // Найдём внутри панели контент, куда будем добавлять кнопки
             Transform content = actionsPanelInstance.transform.Find("ScrollView/Viewport/Content");
             if (content == null)
             {
@@ -141,26 +128,24 @@ namespace Assets.Scripts.Player.Action
                 return;
             }
 
-            // Для каждого IInteractionAction создаём кнопку
             foreach (var mb in interactionActions)
             {
                 IInteractionAction action = mb as IInteractionAction;
                 if (action == null) continue;
 
-                // Создаём UI-кнопку (можно заранее прописать prefab Button)
                 GameObject btnGO = new GameObject("Btn_" + action.ActionName);
                 btnGO.transform.SetParent(content);
                 btnGO.AddComponent<RectTransform>();
                 Button btn = btnGO.AddComponent<Button>();
 
-                // Текст кнопки
-                Text txt = btnGO.AddComponent<Text>();
+                GameObject textGO = new GameObject("Text");
+                textGO.transform.SetParent(btnGO.transform);
+                Text txt = textGO.AddComponent<Text>();
                 txt.text = action.ActionName;
                 txt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
                 txt.color = Color.black;
                 txt.alignment = TextAnchor.MiddleLeft;
 
-                // Добавляем обработчик нажатия
                 btn.onClick.AddListener(() =>
                 {
                     StartCoroutine(StartActionRoutine(action));
@@ -177,7 +162,6 @@ namespace Assets.Scripts.Player.Action
 
         private void PerformPrimaryAction()
         {
-            // Если в списке действий есть хотя бы один — выполняем первый
             if (interactionActions.Count > 0 && player != null)
             {
                 IInteractionAction primary = interactionActions[0] as IInteractionAction;
@@ -188,10 +172,8 @@ namespace Assets.Scripts.Player.Action
 
         private System.Collections.IEnumerator StartActionRoutine(IInteractionAction action)
         {
-            // Тут мы запускаем UI-элемент SliderAction над игроком
             sliderManager.Show(player.transform.position, action.Duration);
 
-            // Ждём, пока Slider "докатится"
             float t = 0f;
             while (t < action.Duration)
             {

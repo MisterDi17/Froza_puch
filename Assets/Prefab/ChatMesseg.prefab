@@ -142,8 +142,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "New Text\u044B\u0432\u0430\u044B\u0432"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 7305eae3b5d86d043b3656646117a829, type: 2}
+  m_sharedMaterial: {fileID: -4110621603332096039, guid: 7305eae3b5d86d043b3656646117a829, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -321,7 +321,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 182.67, y: -109.44}
+  m_AnchoredPosition: {x: 182.67, y: -109.055}
   m_SizeDelta: {x: 345.34, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5327375160920980447
@@ -353,10 +353,10 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "\u0422\u0435\u0441\u0442\u043E\u0432\u043E\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435\u044F
-    \u0434\u043B\u044F \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438 \u0442\u0435\u043A\u0441\u0442\u0430"
+    \u0434\u043B\u044F \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438 \u0442\u0435\u043A\u0441\u0442\u0430\u0432\u0430\u0444\u044B\u0432\u0444\u044B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 7305eae3b5d86d043b3656646117a829, type: 2}
+  m_sharedMaterial: {fileID: -4110621603332096039, guid: 7305eae3b5d86d043b3656646117a829, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
