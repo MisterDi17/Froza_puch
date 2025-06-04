@@ -5,10 +5,8 @@ public class UIActionSliderManager : MonoBehaviour
 {
     [SerializeField] private Slider actionSlider;
 
-    public void Show(Vector3 worldPosition, float duration)
+    public void Show(Transform followTarget, float duration)
     {
-        gameObject.SetActive(true);
-        transform.position = Camera.main.WorldToScreenPoint(worldPosition);
         actionSlider.value = 0;
     }
 
@@ -19,6 +17,6 @@ public class UIActionSliderManager : MonoBehaviour
 
     public void Hide()
     {
-        gameObject.SetActive(false);
+        actionSlider.value = 0;
     }
 }

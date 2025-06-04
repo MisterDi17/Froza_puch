@@ -27,11 +27,11 @@ public class ChatManager : MonoBehaviour
     [Header("Defaults")]
     public Sprite defaultAvatar;
     public Sprite defaultProfileArt;
-
     public ActorCollector actorCollector;
+    private Queue<(Transform target, string text, AudioClip voice)> localQueue = new();
+    private bool isLocalPlaying = false;
 
     public static bool IsChatFocused { get; private set; }
-
     void Start()
     {
         inputField.onEndEdit.AddListener((text) =>
@@ -108,50 +108,131 @@ public class ChatManager : MonoBehaviour
         inputField.text = "";
         inputField.ActivateInputField();
     }
-    private void ShowDialogOverActor(Transform target, string message, AudioClip voice)
+    private void ShowDialogOverActor(Transform target, string text, AudioClip voice)
     {
-        if (dialogParent == null)
-        {
-            Debug.LogError("Dialog Parent не назначен!");
-            return;
-        }
+        localQueue.Enqueue((target, text, voice));
+        if (!isLocalPlaying)
+            StartCoroutine(ProcessLocalQueue());
+    }
+    private IEnumerator ProcessLocalQueue()
+    {
+        isLocalPlaying = true;
 
-        GameObject dialog = Instantiate(dialokPrefab, dialogParent);
-        dialog.transform.localPosition = Vector3.zero; // по желанию
-
-        var followTarget = dialog.GetComponent<FollowTarget>();
-        if (followTarget != null)
+        while (localQueue.Count > 0)
         {
-            followTarget.target = target;
-        }
-        else
-        {
-            Debug.LogError("dialokPrefab не содержит компонент FollowTarget!");
-        }
+            var (target, text, voice) = localQueue.Dequeue();
 
-        TMP_Text textComponent = dialog.transform.Find("Fon/DIalocText")?.GetComponent<TMP_Text>();
-        AudioSource audioSource = dialog.transform.Find("Fon/DIalocText/Audio")?.GetComponent<AudioSource>();
+            GameObject dialogGO = Instantiate(dialokPrefab, dialogParent);
+            RectTransform dialogRect = dialogGO.GetComponent<RectTransform>();
+            Vector3 offset = new(0, 0.75f, 0);
 
-        if (textComponent != null)
-        {
+            TMP_Text dialogText = dialogRect.GetComponentInChildren<TMP_Text>();
+            AudioSource audioSource = dialogGO.GetComponentInChildren<AudioSource>();
+            TypewriterEffect typer = dialogText?.GetComponent<TypewriterEffect>();
+
             bool isDone = false;
-            var typer = textComponent.GetComponent<TypewriterEffect>();
 
             if (typer != null)
-                typer.StartTyping(message, () => isDone = true, audioSource, voice);
+            {
+                typer.StartTyping(text, () => isDone = true, audioSource, voice);
+            }
             else
             {
-                textComponent.text = message;
+                if (dialogText) dialogText.text = text;
                 isDone = true;
             }
 
-            StartCoroutine(DestroyAfterFinish(dialog, () => isDone));
+            float timer = 0f;
+            float waitDuration = text.Length * 0.05f + 2f;
+
+            while (timer < waitDuration)
+            {
+                timer += Time.deltaTime;
+                UpdateDialogPositionOnce(dialogRect, target, offset);
+                yield return null;
+            }
+
+            StartCoroutine(DestroyAfterFinish(dialogGO, () => isDone));
+        }
+
+        isLocalPlaying = false;
+    }
+    private void UpdateDialogPositionOnce(RectTransform dialogRect, Transform target, Vector3 offset)
+    {
+        if (dialogRect == null || target == null || Camera.main == null)
+            return;
+
+        Canvas canvas = dialogParent.GetComponentInParent<Canvas>();
+        if (canvas == null)
+            return;
+
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+
+        Vector3 worldPos = target.position + offset;
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
+
+        Vector2 localPoint;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, Camera.main, out localPoint);
+
+        dialogRect.anchoredPosition = localPoint;
+    }
+    IEnumerator ShowDialogRoutine(RectTransform dialogRect, Transform target, Vector3 offset, string text)
+    {
+        TMP_Text dialogText = dialogRect.GetComponentInChildren<TMP_Text>();
+        if (dialogText == null)
+        {
+            Debug.LogError("В prefab диалога нет TMP_Text!");
+            yield break;
+        }
+
+        yield return StartCoroutine(TypewriterEffect(dialogText, text));
+
+        yield return StartCoroutine(UpdateDialogPosition(dialogRect, target, offset, () => false));
+    }
+    private IEnumerator TypewriterEffect(TMP_Text textUI, string text)
+    {
+        textUI.text = "";
+        foreach (char c in text)
+        {
+            textUI.text += c;
+            yield return new WaitForSeconds(0.05f);
+        }
+    }
+    private IEnumerator UpdateDialogPosition(RectTransform dialogRect, Transform target, Vector3 offset, System.Func<bool> isDone)
+    {
+        Canvas canvas = dialogParent.GetComponentInParent<Canvas>();
+        if (canvas == null || Camera.main == null)
+        {
+            Debug.LogError("Не найден Canvas или Main Camera");
+            yield break;
+        }
+
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+
+        Vector2 currentPos = dialogRect.anchoredPosition;
+        float smoothSpeed = 15f;
+
+        while (!isDone() && target != null)
+        {
+            Vector3 worldPos = target.position + offset;
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
+
+            Vector2 targetPos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, Camera.main, out targetPos);
+
+            // Рассчитываем новое положение с отставанием
+            // Чем выше lagFactor - тем медленнее диалог возвращается к цели, создавая запаздывание
+            currentPos = Vector2.Lerp(currentPos, targetPos, Time.deltaTime * smoothSpeed);
+
+            dialogRect.anchoredPosition = currentPos;
+
+            yield return null;
         }
     }
     private IEnumerator DestroyAfterFinish(GameObject go, System.Func<bool> doneCondition)
     {
         yield return new WaitUntil(doneCondition);
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(0f);
         Destroy(go);
     }
     private void ShowGlobalDialog(string message, ActorCollector.FullActorData actor)
@@ -175,6 +256,7 @@ public class ChatManager : MonoBehaviour
             }
 
             GameObject go = Instantiate(nofilaChatPrefab, dialogParent);
+
             go.transform.localPosition = Vector3.zero; // опционально, если нужен сброс позиции
             var nameText = go.transform.Find("Panel/NameProf/NameActer")?.GetComponent<TMP_Text>();
             var image = go.transform.Find("Panel/NameProf/Image")?.GetComponent<Image>();

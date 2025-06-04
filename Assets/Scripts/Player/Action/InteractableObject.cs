@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 namespace Assets.Scripts.Player.Action
 {
@@ -15,36 +16,36 @@ namespace Assets.Scripts.Player.Action
         [Header("UI Prefabs")]
         [SerializeField] private GameObject iconE_Prefab;
         [SerializeField] private GameObject actionsPanel_Prefab;
+        [SerializeField] private GameObject actionSliderPrefab; // Префаб ActionSlider
+        [SerializeField] private Transform sliderContainer;     // Контейнер, куда будем его помещат
 
         public List<MonoBehaviour> interactionActions = new List<MonoBehaviour>();
-
+        private UIActionSliderManager currentSliderManager;
         private GameObject iconEInstance;
         private GameObject actionsPanelInstance;
         private bool playerInRange = false;
         private float holdTimer = 0f;
         private bool isHolding = false;
         private GameObject player;
-        [SerializeField] private UIActionSliderManager sliderManager;
+        private UIManager uiManager;
+        private Coroutine currentActionCoroutine;
+        private bool isInActionZone = true;
+
 
         private void Awake()
         {
-            for (int i = 0; i < interactionActions.Count; i++)
-            {
-                if (!(interactionActions[i] is IInteractionAction))
-                    Debug.LogWarning($"[InteractableObject] На объекте {name} элемент {interactionActions[i]} не реализует IInteractionAction");
-            }
+            uiManager = Object.FindFirstObjectByType<UIManager>();
         }
-
         private void OnTriggerEnter2D(Collider2D other) // заменено на 2D
         {
             if (other.CompareTag("Player"))
             {
+                isInActionZone = true;
                 playerInRange = true;
                 player = other.gameObject;
                 ShowIconE(true);
             }
         }
-
         private void OnTriggerExit2D(Collider2D other) // заменено на 2D
         {
             if (other.CompareTag("Player"))
@@ -54,9 +55,20 @@ namespace Assets.Scripts.Player.Action
                 ShowIconE(false);
                 CloseActionsPanel();
                 ResetHold();
+
+                isInActionZone = false;
+
+                if (currentActionCoroutine != null)
+                {
+                    StopCoroutine(currentActionCoroutine);
+                    currentActionCoroutine = null;
+
+                    // Удалим UI
+                    if (currentSliderManager != null)
+                        Destroy(currentSliderManager.gameObject.transform.parent.gameObject);
+                }
             }
         }
-
         private void Update()
         {
             if (!playerInRange) return;
@@ -86,13 +98,11 @@ namespace Assets.Scripts.Player.Action
                 ResetHold();
             }
         }
-
         private void ResetHold()
         {
             isHolding = false;
             holdTimer = 0f;
         }
-
         private void ShowIconE(bool show)
         {
             if (show)
@@ -100,7 +110,7 @@ namespace Assets.Scripts.Player.Action
                 if (iconEInstance == null && iconE_Prefab != null)
                 {
                     iconEInstance = Instantiate(iconE_Prefab, transform);
-                    iconEInstance.transform.localPosition = Vector3.up * 2f;
+                    iconEInstance.transform.localPosition = Vector3.zero;
                 }
             }
             else
@@ -109,32 +119,73 @@ namespace Assets.Scripts.Player.Action
                     Destroy(iconEInstance);
             }
         }
-
         private bool IsActionsPanelOpen()
         {
             return actionsPanelInstance != null;
         }
-
         private void OpenActionsPanel()
         {
-            if (actionsPanel_Prefab == null || player == null) return;
+            Debug.Log("[OpenActionsPanel] Вызов метода");
 
-            actionsPanelInstance = Instantiate(actionsPanel_Prefab, GameObject.Find("Canvas").transform);
-
-            Transform content = actionsPanelInstance.transform.Find("ScrollView/Viewport/Content");
-            if (content == null)
+            if (actionsPanel_Prefab == null)
             {
-                Debug.LogError($"[InteractableObject] Не найден Content в {actionsPanelInstance.name}");
+                Debug.LogError("[OpenActionsPanel] actionsPanel_Prefab == NULL !");
                 return;
             }
 
+            if (player == null)
+            {
+                Debug.LogError("[OpenActionsPanel] player == null");
+                return;
+            }
+
+            GameObject canvas = GameObject.Find("Canvas");
+            if (canvas == null)
+            {
+                Debug.LogError("[OpenActionsPanel] Не найден Canvas");
+                return;
+            }
+
+            // 👉 СНАЧАЛА создаём панель
+            actionsPanelInstance = Instantiate(actionsPanel_Prefab, canvas.transform);
+            Debug.Log($"[OpenActionsPanel] Панель создана: {actionsPanelInstance.name}");
+
+            // 👉 ПОТОМ ищем Content уже внутри созданного
+            Transform content = actionsPanelInstance.transform.Find("ScrollView/Viewport/Content");
+
+            if (content == null)
+            {
+                Debug.LogError("[OpenActionsPanel] Не найден путь ScrollView/Viewport/Content в " + actionsPanelInstance.name);
+                foreach (Transform child in actionsPanelInstance.transform)
+                {
+                    Debug.Log("[OpenActionsPanel] Корневой потомок: " + child.name);
+                }
+                return;
+            }
+
+            Debug.Log("[OpenActionsPanel] Content найден успешно");
+
+            // Далее лог по кнопкам:
             foreach (var mb in interactionActions)
             {
-                IInteractionAction action = mb as IInteractionAction;
-                if (action == null) continue;
+                if (mb == null)
+                {
+                    Debug.LogWarning("[OpenActionsPanel] null в interactionActions");
+                    continue;
+                }
 
+                IInteractionAction action = mb as IInteractionAction;
+                if (action == null)
+                {
+                    Debug.LogWarning($"[OpenActionsPanel] Компонент {mb.GetType().Name} не реализует IInteractionAction");
+                    continue;
+                }
+
+                Debug.Log($"[OpenActionsPanel] Добавляется кнопка для действия: {action.ActionName}");
+
+                // Создание кнопки
                 GameObject btnGO = new GameObject("Btn_" + action.ActionName);
-                btnGO.transform.SetParent(content);
+                btnGO.transform.SetParent(content, false);
                 btnGO.AddComponent<RectTransform>();
                 Button btn = btnGO.AddComponent<Button>();
 
@@ -142,24 +193,22 @@ namespace Assets.Scripts.Player.Action
                 textGO.transform.SetParent(btnGO.transform);
                 Text txt = textGO.AddComponent<Text>();
                 txt.text = action.ActionName;
-                txt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 txt.color = Color.black;
                 txt.alignment = TextAnchor.MiddleLeft;
 
                 btn.onClick.AddListener(() =>
                 {
-                    StartCoroutine(StartActionRoutine(action));
+                    currentActionCoroutine = StartCoroutine(StartActionRoutine(action));
                     CloseActionsPanel();
                 });
             }
         }
-
         private void CloseActionsPanel()
         {
             if (actionsPanelInstance != null)
                 Destroy(actionsPanelInstance);
         }
-
         private void PerformPrimaryAction()
         {
             if (interactionActions.Count > 0 && player != null)
@@ -169,21 +218,60 @@ namespace Assets.Scripts.Player.Action
                     StartCoroutine(StartActionRoutine(primary));
             }
         }
-
-        private System.Collections.IEnumerator StartActionRoutine(IInteractionAction action)
+        private IEnumerator StartActionRoutine(IInteractionAction action)
         {
-            sliderManager.Show(player.transform.position, action.Duration);
+            if (actionSliderPrefab == null || sliderContainer == null || player == null)
+            {
+                Debug.LogError("[InteractableObject] Префаб или контейнер не назначены!");
+                yield break;
+            }
 
+            // 👉 Удаляем предыдущий слайдер, если уже есть
+            if (currentSliderManager != null)
+            {
+                Destroy(currentSliderManager.gameObject.transform.parent.gameObject); // Удаляем FollowTarget_UI
+                currentSliderManager = null;
+            }
+
+            // 1. Создаём FollowTarget_UI с RectTransform
+            GameObject followGO = new GameObject("FollowTarget_UI", typeof(RectTransform));
+            followGO.transform.SetParent(sliderContainer, false);
+
+            FollowTarget follow = followGO.AddComponent<FollowTarget>();
+            follow.target = player.transform;
+            follow.offset = new Vector3(0, 0.75f, 0); // Сдвиг над игроком
+
+            // 2. Создаём слайдер внутри FollowTarget
+            GameObject sliderGO = Instantiate(actionSliderPrefab, followGO.transform);
+            currentSliderManager = sliderGO.GetComponent<UIActionSliderManager>();
+
+            if (currentSliderManager == null)
+            {
+                Debug.LogError("[InteractableObject] Префаб не содержит UIActionSliderManager!");
+                yield break;
+            }
+
+            currentSliderManager.Show(player.transform, action.Duration);
+
+            // 3. Прогресс выполнения действия
             float t = 0f;
-            while (t < action.Duration)
+            while (t < action.Duration && isInActionZone)
             {
                 t += Time.deltaTime;
-                sliderManager.UpdateProgress(t / action.Duration);
+                currentSliderManager.UpdateProgress(t / action.Duration);
                 yield return null;
             }
 
-            sliderManager.Hide();
-            action.Execute(player);
+            // 4. Удаление слайдера после завершения
+            if (isInActionZone)
+            {
+                action.Execute(player);
+            }
+
+            Destroy(followGO);
+            currentSliderManager = null;
+            currentActionCoroutine = null;
+
         }
     }
 }
