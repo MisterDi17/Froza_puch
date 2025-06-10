@@ -20,6 +20,6 @@ public class SceneLoader : MonoBehaviour
 
     public void LoadScene(string sceneName, bool useLoadingScene = false)
     {
-        SceneManager.LoadScene(sceneName); // Без загрузочного экрана пока
+        SceneManager.LoadScene(sceneName);
     }
 }

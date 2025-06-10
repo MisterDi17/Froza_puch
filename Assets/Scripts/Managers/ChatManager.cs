@@ -11,7 +11,7 @@ public class ChatManager : MonoBehaviour
     [SerializeField] private GameObject dialokPrefab;
     [SerializeField] private Transform dialogParent;
 
-    private Queue<(string, ActorCollector.FullActorData)> globalQueue = new Queue<(string, ActorCollector.FullActorData)>();
+    private Queue<(string, FullActorData)> globalQueue = new Queue<(string, FullActorData)>();
     private bool isGlobalPlaying = false;
 
     [Header("UI")]
@@ -28,6 +28,7 @@ public class ChatManager : MonoBehaviour
     public Sprite defaultAvatar;
     public Sprite defaultProfileArt;
     public ActorCollector actorCollector;
+    public bool isChek;
     private Queue<(Transform target, string text, AudioClip voice)> localQueue = new();
     private bool isLocalPlaying = false;
 
@@ -44,9 +45,96 @@ public class ChatManager : MonoBehaviour
         Debug.Log($"Всего актёров: {actors.Count}");
         foreach (var a in actors)
             Debug.Log($"Актёр: {a.name}");
-
-        AddSystemMessage("Добро пожаловать в чат!");
         PopulateActorDropdown();
+        if(isChek == true) StartCoroutine(TutorialSequence());
+    }
+    private IEnumerator TutorialSequence()
+    {
+        yield return ShowGlobal("Добро пожаловать, Мой дорогой друг.", "Наставник");
+        yield return new WaitForSeconds(1.5f);
+
+        yield return ShowGlobal("Ты находишься в тренировочной среде. Сейчас мы активируем основные протоколы.", "Наставник");
+        yield return new WaitForSeconds(2f);
+
+        yield return ShowLocal("Готов. Диагностика завершена. Запуск обучения.", "Модуль 3g 2.0.3");
+
+        // Обучение движению
+        yield return ShowGlobal("Первый протокол — перемещение.", "Наставник");
+        yield return ShowGlobal("Используй клавиши W, A, S, D для передвижения.", "Наставник");
+        yield return new WaitForSeconds(2.5f);
+
+        yield return ShowGlobal("Осмотрись на территории. Когда будешь готов — продолжим.", "Наставник");
+        yield return new WaitForSeconds(3f);
+
+        // Взаимодействие
+        yield return ShowGlobal("Перед тобой находится объект взаимодействия.", "Наставник");
+        yield return ShowGlobal("Чтобы взаимодействовать, подойди к объекту и нажми E.", "Наставник");
+        yield return ShowGlobal("Для расширенного выбора действий зажми E и удерживай — появится список.", "Наставник");
+        yield return new WaitForSeconds(3f);
+
+        yield return ShowLocal("Команда взаимодействия получена. Проверяю функциональность...", "Модуль 3g 2.0.3");
+
+        // Ctrl: красться и осматриваться
+        yield return ShowGlobal("Следующий модуль — осмотр и скрытность.", "Наставник");
+        yield return ShowGlobal("Зажми Ctrl, чтобы присесть и двигаться тише.", "Наставник");
+        yield return ShowGlobal("Также удержание Ctrl позволяет свободно осматривать территорию.", "Наставник");
+        yield return new WaitForSeconds(3f);
+
+        // Shift: рывок и способности
+        yield return ShowGlobal("Активируем модуль рывка.", "Наставник");
+        yield return ShowGlobal("Удерживай Shift, чтобы совершить рывок в выбранном направлении.", "Наставник");
+        yield return ShowGlobal("Ты можешь отключить рывок в панели способностей, если он тебе мешает.", "Наставник");
+        yield return new WaitForSeconds(3.5f);
+
+        yield return ShowLocal("Рывок активен. Панель способностей доступна.", "Модуль 3g 2.0.3");
+
+        // Система чата
+        yield return ShowGlobal("Теперь о системе общения.", "Наставник");
+        yield return ShowGlobal("В нижней части чата ты можешь выбрать актёра и режим сообщения.", "Наставник");
+        yield return ShowGlobal("Режимы включают глобальные сообщения и локальные, отображаемые над головой персонажа.", "Наставник");
+        yield return new WaitForSeconds(3f);
+
+        yield return ShowLocal("Выбор контекста общения завершён. Передаю привет, игрок.", "Модуль 3g 2.0.3");
+
+        // Время
+        yield return ShowGlobal("И последнее — управление временем.", "Наставник");
+        yield return ShowGlobal("В правом нижнем углу ты увидишь панель времени.", "Наставник");
+        yield return ShowGlobal("С её помощью ты можешь ускорять или замедлять ход событий.", "Наставник");
+        yield return new WaitForSeconds(3f);
+
+        // Завершение
+        yield return ShowGlobal("Обучение завершено.", "Наставник");
+        yield return ShowGlobal("Можешь приступать к исследованию системы. Удачи, Модуль 3g 2.0.3.", "Наставник");
+
+        yield return ShowLocal("Миссия принята. Переход в активный режим.", "Модуль 3g 2.0.3");
+    }
+    private IEnumerator ShowGlobal(string message, string actorName)
+    {
+        var actor = actorCollector.GetActorData(actorName);
+        if (actor == null)
+        {
+            Debug.LogWarning($"[ChatManager] Не найден актёр: {actorName}");
+            yield break;
+        }
+
+        ShowGlobalDialog(message, actor);
+        float waitTime = message.Length * 0.05f + 1.5f;
+        yield return new WaitForSeconds(waitTime);
+    }
+    private IEnumerator ShowLocal(string message, string actorName)
+    {
+        var actor = actorCollector.GetActor(actorName);
+        var actorData = actorCollector.GetActorData(actorName);
+
+        if (actor == null || actorData == null)
+        {
+            Debug.LogWarning($"[ChatManager] Не найден актёр: {actorName}");
+            yield break;
+        }
+
+        ShowDialogOverActor(actor.transform, message, actorData.voice);
+        float waitTime = message.Length * 0.05f + 1.5f;
+        yield return new WaitForSeconds(waitTime);
     }
     void Update()
     {
@@ -235,7 +323,7 @@ public class ChatManager : MonoBehaviour
         yield return new WaitForSeconds(0f);
         Destroy(go);
     }
-    private void ShowGlobalDialog(string message, ActorCollector.FullActorData actor)
+    private void ShowGlobalDialog(string message, FullActorData actor)
     {
         globalQueue.Enqueue((message, actor));
         if (!isGlobalPlaying)

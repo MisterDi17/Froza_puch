@@ -2,7 +2,6 @@
 using System.Linq;
 using UnityEngine;
 
-
 public class AbilityManager : MonoBehaviour
 {
     [SerializeField]
@@ -10,7 +9,7 @@ public class AbilityManager : MonoBehaviour
 
     private List<IAbility> abilities = new List<IAbility>();
 
-    private float lastDashTapTime;
+    private float lastDashTapTime;  
     private const float doubleTapThreshold = 0.3f;
 
     private void Awake()

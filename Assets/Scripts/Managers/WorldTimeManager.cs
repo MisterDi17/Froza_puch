@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-
 public class WorldTimeManager : MonoBehaviour
 {
     [Header("UI")]

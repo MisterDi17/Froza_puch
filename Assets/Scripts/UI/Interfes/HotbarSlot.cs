@@ -4,15 +4,12 @@ using UnityEngine.EventSystems;
 
 public class HotbarSlot : MonoBehaviour, IDropHandler, IPointerClickHandler
 {
-    public int slotIndex; // 0–9 (0 соответствует клавише 0, остальные 1–9)
+    public int slotIndex;
     public Image iconImage;
     public InventoryItem assignedItem;
 
-    // При падении (Drop) из инвентаря сюда
     public void OnDrop(PointerEventData eventData)
     {
-        // Предположим, что в eventData.pointerDrag находится UI-элемент ItemIcon из инвентаря, 
-        // у которого есть скрипт DraggableItem, который хранит ссылку на InventoryItem.
         var drag = eventData.pointerDrag;
         if (drag == null) return;
         var draggable = drag.GetComponent<DraggableItem>();
@@ -33,18 +30,14 @@ public class HotbarSlot : MonoBehaviour, IDropHandler, IPointerClickHandler
         else
         {
             iconImage.sprite = null;
-            iconImage.color = new Color(0, 0, 0, 0); // прозрачный
+            iconImage.color = new Color(0, 0, 0, 0);
         }
     }
-
-    // Дополнительно: при клике на слот (например, хотим использовать предмет)
     public void OnPointerClick(PointerEventData eventData)
     {
         if (assignedItem != null)
         {
-            // Используем предмет (вызываем у InventoryItem/ItemData соответствующую логику)
             Debug.Log($"Используем {assignedItem.data.itemName} из хотбара {slotIndex}");
-            // Например, если это еда — съесть, если оружие — выстрелить, и т.д.
         }
     }
 }

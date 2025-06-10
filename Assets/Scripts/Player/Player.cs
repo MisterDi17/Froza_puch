@@ -8,22 +8,15 @@ public class Player : MonoBehaviour
 
     private void Awake()
     {
-        // Инициализируем компоненты движения/поворота/анимации
         if (!settings.Movement)
             settings.SetMovement(GetComponentInChildren<GameMovement>());
         if (!settings.Rotation)
             settings.SetRotation(GetComponentInChildren<GameRotation>());
         if (!settings.Animator)
             settings.SetAnimator(GetComponentInChildren<Animator>());
-
-        // Больше не нужно вызывать Initialize у AbilityManager,
-        // список абилок затаскивается прямо в инспекторе.
     }
-
     private void FixedUpdate()
     {
-
-        // Блокировка управления, если фокус на чате
         if (ChatManager.IsChatFocused)
             return;
 

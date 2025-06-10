@@ -224,7 +224,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: af76ca16c34ad48438969b810109a5d4, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.528
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -655,7 +655,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timeBetweenLetters: 0.05
-  audioInterval: 0.5
+  audioInterval: 0.75
   typingSound: {fileID: 8300000, guid: 0fbd8257622f28c4295b14a7abce6c90, type: 3}
   audioSource: {fileID: 5998661892623689468}
 --- !u!1 &8455777168351091322

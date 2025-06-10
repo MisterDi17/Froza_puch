@@ -5,16 +5,6 @@ using System.Collections.Generic;
 
 public class ActorCollector : MonoBehaviour
 {
-    [System.Serializable]
-    public class FullActorData
-    {
-        public string name;
-        public Sprite avatar;
-        public Sprite poster;
-        public AudioClip voice;
-        public GameObject actorGameObject;
-    }
-
     public Transform acterRoot; // корень всех актёров
     public TMP_Dropdown selectActorBX;
     public Sprite defaultAvatar;

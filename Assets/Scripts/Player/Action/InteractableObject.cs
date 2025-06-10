@@ -18,6 +18,7 @@ namespace Assets.Scripts.Player.Action
         [SerializeField] private GameObject actionsPanel_Prefab;
         [SerializeField] private GameObject actionSliderPrefab; // Префаб ActionSlider
         [SerializeField] private Transform sliderContainer;     // Контейнер, куда будем его помещат
+        [SerializeField] private Font testFont;
 
         public List<MonoBehaviour> interactionActions = new List<MonoBehaviour>();
         private UIActionSliderManager currentSliderManager;
@@ -156,45 +157,36 @@ namespace Assets.Scripts.Player.Action
             if (content == null)
             {
                 Debug.LogError("[OpenActionsPanel] Не найден путь ScrollView/Viewport/Content в " + actionsPanelInstance.name);
-                foreach (Transform child in actionsPanelInstance.transform)
-                {
-                    Debug.Log("[OpenActionsPanel] Корневой потомок: " + child.name);
-                }
                 return;
             }
-
-            Debug.Log("[OpenActionsPanel] Content найден успешно");
 
             // Далее лог по кнопкам:
             foreach (var mb in interactionActions)
             {
-                if (mb == null)
-                {
-                    Debug.LogWarning("[OpenActionsPanel] null в interactionActions");
-                    continue;
-                }
+                if (mb == null) continue;
 
                 IInteractionAction action = mb as IInteractionAction;
-                if (action == null)
-                {
-                    Debug.LogWarning($"[OpenActionsPanel] Компонент {mb.GetType().Name} не реализует IInteractionAction");
-                    continue;
-                }
+                if (action == null) continue;
 
                 Debug.Log($"[OpenActionsPanel] Добавляется кнопка для действия: {action.ActionName}");
 
                 // Создание кнопки
                 GameObject btnGO = new GameObject("Btn_" + action.ActionName);
                 btnGO.transform.SetParent(content, false);
-                btnGO.AddComponent<RectTransform>();
+
+                RectTransform rect = btnGO.AddComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(350f, 50f); // Устанавливаем ширину кнопки
+
                 Button btn = btnGO.AddComponent<Button>();
 
                 GameObject textGO = new GameObject("Text");
-                textGO.transform.SetParent(btnGO.transform);
+                textGO.transform.SetParent(btnGO.transform, false);
+
                 Text txt = textGO.AddComponent<Text>();
                 txt.text = action.ActionName;
-                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                txt.color = Color.black;
+                txt.fontSize = 28;
+                txt.font = testFont;
+                txt.color = Color.white;
                 txt.alignment = TextAnchor.MiddleLeft;
 
                 btn.onClick.AddListener(() =>
@@ -202,6 +194,14 @@ namespace Assets.Scripts.Player.Action
                     currentActionCoroutine = StartCoroutine(StartActionRoutine(action));
                     CloseActionsPanel();
                 });
+
+                // 👉 Устанавливаем нормальные позиции/размер
+                RectTransform textRT = textGO.GetComponent<RectTransform>();
+                textRT.anchorMin = Vector2.zero;
+                textRT.anchorMax = Vector2.one;
+                textRT.offsetMin = Vector2.zero;
+                textRT.offsetMax = Vector2.zero;
+                textRT.localScale = Vector3.one;
             }
         }
         private void CloseActionsPanel()

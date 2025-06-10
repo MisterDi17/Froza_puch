@@ -24,21 +24,18 @@ public class WorldInventoryUI : MonoBehaviour
         btnSort.onClick.AddListener(OnSort);
         btnFilter.onClick.AddListener(OnFilter);
     }
-
     public void OpenContainer(ContainerInteractable container)
     {
         currentContainer = container;
         panel.SetActive(true);
         RefreshUI();
     }
-
     public void CloseContainer()
     {
         panel.SetActive(false);
         ClearUI();
         currentContainer = null;
     }
-
     public void AddItemToContainer(InventoryItem ci)
     {
         if (currentContainer == null) return;
@@ -48,8 +45,6 @@ public class WorldInventoryUI : MonoBehaviour
             CreateItemIcon(ci);
         }
     }
-
-
     private void RefreshUI()
     {
         // Очищаем всё, потом заново перебираем container.containerItems и добавляем только те, что isLooted == true
@@ -65,21 +60,17 @@ public class WorldInventoryUI : MonoBehaviour
             }
         }
     }
-
     private void ClearUI()
     {
         foreach (Transform child in itemsContainer)
             Destroy(child.gameObject);
     }
-
     private void CreateItemIcon(InventoryItem ci)
     {
         GameObject iconGO = Instantiate(Resources.Load<GameObject>("ItemIcon"), itemsContainer);
         ItemIcon icon = iconGO.GetComponent<ItemIcon>();
         icon.Setup(ci.data.icon, ci.quantity);
     }
-
-
     private void OnTakeEverything()
     {
         // Проходим по displayedItems (которые уже isLooted), и пытаемся добавить их в инвентарь игрока.
@@ -104,7 +95,6 @@ public class WorldInventoryUI : MonoBehaviour
         }
         RefreshUI();
     }
-
     private void OnCollectStacks()
     {
         // Проходим по displayedItems, группируем по itemData, объединяем их, оставляем по одному ContainerItem на каждый тип
@@ -130,7 +120,6 @@ public class WorldInventoryUI : MonoBehaviour
 
         RefreshUI();
     }
-
     private void OnSort()
     {
         // Например, сортировать по size (Vector2Int) → более крупный первым 
@@ -142,7 +131,6 @@ public class WorldInventoryUI : MonoBehaviour
         });
         RefreshUI();
     }
-
     private void OnFilter()
     {
         // Смоделируем фильтрацию по ценности: группируем теги
